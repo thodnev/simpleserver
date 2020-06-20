@@ -82,7 +82,7 @@ inline int _log_getcolor(enum _log_level lvl)
 #endif
 
 #define _log(lvl, msg, lineno, funcname, ...) do {                                                \
-    fprintf(stderr, LOG_FORMAT(msg), _LOG_CARGS(lvl, _LOG_NAME((enum _log_level)lvl),             \
+    if (lvl <= DEBUG) fprintf(stderr, LOG_FORMAT(msg), _LOG_CARGS(lvl, _LOG_NAME((enum _log_level)lvl),             \
             (long)lineno, funcname,##__VA_ARGS__));                                               \
     } while(0)
 

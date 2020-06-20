@@ -7,7 +7,7 @@
  *       ^ (?P<proto> tcp|udp|unix) : \/\/ (?:
  *         (?:
  *           (?P<ip>
- *             \d{1,3}  (?: .\d{1,3}) {3}
+ *             \d{1,3}  (?: \.\d{1,3}) {3}
  *           ) | (?P<domain>
  *             [a-zA-Z0-9] *   (?: \.? [a-zA-Z0-9\-] ) *
  *           )
@@ -23,7 +23,7 @@
  *   I recommend using services like: regex101.com, debuggex.com or regexr.com for that.
  *
  *   When working with large regexps, use the 'extended' flag and write your regexps in
- *   a multiline-way. One may also wish to use the (?# comment) syntax.
+ *   a multiline-way. One may also wish to use the (?# comment) or # comment syntax.
  *
  *   **Improtant** : above is presented the pure RE. If we denote it in C, care should
  *   be taken to properly escape all special chars. I.e. pure '\' becomes '\\' in c string,

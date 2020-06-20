@@ -32,6 +32,8 @@
 #include <stdlib.h>
 
 
+// Here we rely on some heavy typecasting. That's ok and is exactly how
+// the underlying structures were designed
 bool host_resolve(enum socket_type kind, const char *host, struct in_addr *res)
 {
     if (STYPE_UNIX == kind)
@@ -51,12 +53,12 @@ bool host_resolve(enum socket_type kind, const char *host, struct in_addr *res)
     return true;
 }
 
-
+// Beware: the code below is really really dirty and obviously needs a serious retouch
 int main(int argc, char *argv[])
 {
     log_info("Size of struct socket_uri %lu", (unsigned long)sizeof(struct socket_uri));
     struct socket_uri uri = {0};
-    if (!uri_parse("tcp://127.0.0.1:1234", &uri)) {
+    if (!uri_parse("tcp://localhost:1234", &uri)) {
         log_err("Wrong arguments");
         exit(EXIT_FAILURE);
     }
