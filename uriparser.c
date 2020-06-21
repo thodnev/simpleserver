@@ -44,21 +44,18 @@
 #include <pcre2.h>      // Requires buildflags as `pkg-config --cflags --libs libpcre2-8` shows
 
 static const char * const uri_re = (
-    "^ (?P<proto> tcp|udp|unix) : \\/\\/ (?: "
-    "  (?: "
-    "    (?P<ip> "
-    "        \\d{1,3}  (?: \\.\\d{1,3}) {3} "
-    "    ) | (?P<host> "
-    "      (?: [a-zA-Z0-9] | [a-zA-Z0-9][a-zA-Z0-9\\-]{0,61} [a-zA-Z0-9] ) "
-    "      (?: \\. (?: [a-zA-Z0-9] | [a-zA-Z0-9][a-zA-Z0-9\\-]{0,61} [a-zA-Z0-9] ) ) *"
-    "    ) "
-    "    : (?P<port> \\d{1,6}) "
-    "  ) | (?P<path> "
-    "     [^[:cntrl:]] + "
-    "  ) "
-    ")$"
+    " ^ (?: "
+    "     (?P<proto> tcp|udp) : \\/\\/ (?: "
+    "       (?P<host> "
+    "         (?: [a-zA-Z0-9] | [a-zA-Z0-9][a-zA-Z0-9\\-]{0,61} [a-zA-Z0-9] ) "
+    "         (?: \\. (?: [a-zA-Z0-9] | [a-zA-Z0-9][a-zA-Z0-9\\-]{0,61} [a-zA-Z0-9] ) ) * "
+    "       ) : (?P<port> \\d{1,6}) "
+    "   ) | (?: "
+    "     (?P<proto> unix) : \\/\\/ (?P<path> [^[:cntrl:]] + ) "
+    "   ) "
+    " )$ "
 );
-static const char *uri_groupnames[] = {"proto", "ip", "host", "port", "path", NULL};
+static const char *uri_groupnames[] = {"proto", "host", "port", "path", NULL};
 
 
 // There is always a tradeoff between simplicity and feature-richness
@@ -82,11 +79,11 @@ static long re_collect_named(const char *regexp, const char *string,
     // Use default compile context with following option flags:
     //    PCRE2_EXTENDED - Ignore white space and # comments
     //    PCRE2_UTF - Treat pattern and subjects as UTF strings
-    //    PCRE2_UNGREEDY - Non-greedy matching
+    //    PCRE2_DUPNAMES - Allow duplicate names for subpatterns
     pcre2_code *re = pcre2_compile(
         (PCRE2_SPTR)regexp,                /* A string containing expression to be compiled */
         PCRE2_ZERO_TERMINATED,             /* The length of the string or PCRE2_ZERO_TERMINATED */
-        PCRE2_EXTENDED | PCRE2_UTF,        /* Option bits */
+        PCRE2_EXTENDED | PCRE2_UTF | PCRE2_DUPNAMES,        /* Option bits */
         &re_err,                           /* Where to put an error code */
         &_re_erroffset,                    /* Where to put an error offset */
         NULL);                             /* Pointer to a compile context or NULL */
@@ -189,21 +186,21 @@ code_free:
 
 bool uri_parse(const char *uristring, struct socket_uri *resuri)
 {
+    bool ret = false;
     if (NULL == resuri || NULL == uristring)
-        return false;   // fail fast
+        return ret;   // fail fast
 
     char *groupvals[arr_len(uri_groupnames) - 1];
     long found = re_collect_named(uri_re, uristring, uri_groupnames, groupvals);
     if (found < 1)
-        return false;
+        return ret;
 
     const char *proto = groupvals[0],
-               *ip    = groupvals[1],
-               *host  = groupvals[2],
-               *port  = groupvals[3],
-               *path  = groupvals[4];
+               *host  = groupvals[1],
+               *port  = groupvals[2],
+               *path  = groupvals[3];
 
-    log_dbg("HOST: %s IP: %s", host, ip);
+    log_dbg("PROTO: %s HOST: %s PORT: %s PATH: %s", proto, host, port, path);
     struct socket_uri res = {
         .type = (!strcmp(proto, "tcp") ? STYPE_TCP :
                  !strcmp(proto, "udp") ? STYPE_UDP :
@@ -215,41 +212,31 @@ bool uri_parse(const char *uristring, struct socket_uri *resuri)
         long long p;
         if (NULL == port || sscanf(port, "%lld", &p) < 1 || p < 1 || p > 65535) {
             log_err("port conversion failed");
-            return false;
+            goto dealloc;
+        }
+        res.host = strdup(host);
+        if (NULL == res.host) {
+            log_err("host conversion failed");
+            goto dealloc;
         }
         res.port = htons(p);    // machine order to network order
-    }
-    // this could be done in a better way
-    if (NULL != path) {
+    } else {
         res.path = strdup(path);
         if (NULL == res.path) {
-            log_err("path memory allocation failed");
-            return false;
+            log_err("path conversion failed");
+            goto dealloc;
         }
-    } else if ((NULL != host) && (NULL == ip)) {
-        res.host = strdup(host);
-        if ((NULL == res.host)) {
-            log_err("host conversion failed");
-            return false;
-        }
-    } else if ((NULL != ip) && (NULL == host)) {
-        if (!inet_aton(ip, &res.ip)) {
-            log_err("ip/port conversion failed");
-            return false;
-        }
-        res.host = NULL;
-    } else {
-        log_crit("Unexpected uri combination");
-        return false;
     }
 
+    ret = true;
+    memcpy(resuri, &res, sizeof(res));
+
+dealloc:
     log_info("Freeing intermediate groupvals");
     arr_foreach(v, groupvals) {
         log_dbg("  %s", v);
         free(v);
     }
 
-    memcpy(resuri, &res, sizeof(res));
-
-    return true;
+    return ret;
 }

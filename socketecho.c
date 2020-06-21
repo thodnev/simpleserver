@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 {
     log_dbg("Size of struct socket_uri %lu", (unsigned long)sizeof(struct socket_uri));
     struct socket_uri uri = {0};
-    if (!uri_parse("tcp://localhost:1234", &uri)) {
+    if (!uri_parse("unix://localhost:1234", &uri)) {
         log_err("Wrong arguments");
         exit(EXIT_FAILURE);
     }
