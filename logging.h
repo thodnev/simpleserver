@@ -21,6 +21,7 @@
 
 #if !defined(DEBUG) || !DEBUG
 #define log(lvl, fmt, ...)
+#define log_dbg(fmt, ...)
 #define log_info(fmt, ...)
 #define log_warn(fmt, ...)
 #define log_err(fmt, ...)
@@ -36,11 +37,13 @@ enum _log_level {
     LOG_CRIT = 1,
     LOG_ERR  = 2,
     LOG_WARN = 3,
-    LOG_INFO = 4
+    LOG_INFO = 4,
+    LOG_DEBUG = 5       /* Insanely verbose logging */
 };
 
-#define _LOG_NAME(lvl) (lvl == LOG_INFO ? "INFO" : \
-                        lvl == LOG_WARN ? "WARNING" : \
+#define _LOG_NAME(lvl) (lvl == LOG_DEBUG ? "DEBUG" : \
+                        lvl == LOG_INFO ? "INFO" : \
+                        lvl == LOG_WARN ? "WARN" : \
                         lvl == LOG_ERR ? "ERROR" : \
                         lvl == LOG_CRIT ? "CRITICAL" : \
                         "<UNKNOWN>")
@@ -60,15 +63,17 @@ enum _log_level {
 #define _LOG_NOCOLOR "\033[0m"
 
 enum _log_colors {
-    _LOG_COLOR_INFO = 32,       // INFO: green
-    _LOG_COLOR_WARN = 33,       // WARN: yellow
-    _LOG_COLOR_ERR = 31,        // ERR: red
-    _LOG_COLOR_CRIT = 91        // CRIT: light red
+    _LOG_COLOR_DEBUG = 32,       // DEBUG: green
+    _LOG_COLOR_INFO  = 94,       // INFO: light blue
+    _LOG_COLOR_WARN  = 33,       // WARN: yellow
+    _LOG_COLOR_ERR   = 31,       // ERR: red
+    _LOG_COLOR_CRIT  = 91        // CRIT: light red
 };
 
 inline int _log_getcolor(enum _log_level lvl)
 {
     switch (lvl) {
+    case LOG_DEBUG: return _LOG_COLOR_DEBUG;
     case LOG_INFO:  return _LOG_COLOR_INFO;
     case LOG_WARN:  return _LOG_COLOR_WARN;
     case LOG_ERR:   return _LOG_COLOR_ERR;
@@ -87,6 +92,7 @@ inline int _log_getcolor(enum _log_level lvl)
     } while(0)
 
 #define log(lvl, fmt, ...) _log(lvl, fmt, __LINE__, __func__,##__VA_ARGS__)
+#define log_dbg(fmt, ...)  _log(LOG_DEBUG, fmt, __LINE__, __func__,##__VA_ARGS__)
 #define log_info(fmt, ...) _log(LOG_INFO, fmt, __LINE__, __func__,##__VA_ARGS__)
 #define log_warn(fmt, ...) _log(LOG_WARN, fmt, __LINE__, __func__,##__VA_ARGS__)
 #define log_err(fmt, ...)  _log(LOG_ERR, fmt, __LINE__, __func__,##__VA_ARGS__)

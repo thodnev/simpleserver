@@ -124,14 +124,14 @@ static long re_collect_named(const char *regexp, const char *string,
         ret = RE_NOMATCH;
         goto match_free;
     }
-    log_info("Match count %ld", mcnt);
+    log_dbg("Match count %ld", mcnt);
 
-    if (DEBUG >= LOG_INFO) {
+    if (DEBUG >= LOG_DEBUG) {
         PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match);
         for (long i = 0; i <  mcnt; i ++) {
             PCRE2_SPTR substring_start = string + ovector[2*i];
             PCRE2_SIZE substring_length = ovector[2*i+1] - ovector[2*i];
-            log_info("  Item %2ld: %.*s", i, (int)substring_length, (char *)substring_start);
+            log_dbg("  Item %2ld: %.*s", i, (int)substring_length, (char *)substring_start);
         }
     }
 
@@ -158,7 +158,7 @@ static long re_collect_named(const char *regexp, const char *string,
             collected[i] = NULL;
             continue;
         }
-        log_info("  Found %s=%s", groupnames[i], val);
+        log_dbg("  Found %s=%s", groupnames[i], val);
 
         numfound++;
         // duplicate string allocating new memory as PCRE does allocation on its own
@@ -178,10 +178,10 @@ static long re_collect_named(const char *regexp, const char *string,
     ret = numfound;
 
 match_free:
-    log_info("Deallocating re match data");
+    log_dbg("Deallocating re match data");
     pcre2_match_data_free(match);
 code_free:
-    log_info("Deallocating re compiled code");
+    log_dbg("Deallocating re compiled code");
     pcre2_code_free(re);
     return ret;
 }
@@ -203,7 +203,7 @@ bool uri_parse(const char *uristring, struct socket_uri *resuri)
                *port  = groupvals[3],
                *path  = groupvals[4];
 
-    log_info("HOST: %s IP: %s", host, ip);
+    log_dbg("HOST: %s IP: %s", host, ip);
     struct socket_uri res = {
         .type = (!strcmp(proto, "tcp") ? STYPE_TCP :
                  !strcmp(proto, "udp") ? STYPE_UDP :
@@ -245,7 +245,7 @@ bool uri_parse(const char *uristring, struct socket_uri *resuri)
 
     log_info("Freeing intermediate groupvals");
     arr_foreach(v, groupvals) {
-        log_info("  %s", v);
+        log_dbg("  %s", v);
         free(v);
     }
 

@@ -1,7 +1,7 @@
 # Based on GitHub C gitignore (https://github.com/github/gitignore)
 
 # Project ignores
-./socketecho.c
+/socketecho
 .build/
 
 # Prerequisites

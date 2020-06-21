@@ -56,7 +56,7 @@ bool host_resolve(enum socket_type kind, const char *host, struct in_addr *res)
 // Beware: the code below is really really dirty and obviously needs a serious retouch
 int main(int argc, char *argv[])
 {
-    log_info("Size of struct socket_uri %lu", (unsigned long)sizeof(struct socket_uri));
+    log_dbg("Size of struct socket_uri %lu", (unsigned long)sizeof(struct socket_uri));
     struct socket_uri uri = {0};
     if (!uri_parse("tcp://localhost:1234", &uri)) {
         log_err("Wrong arguments");
