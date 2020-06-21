@@ -26,8 +26,8 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.c | $(BUILDDIR)
 $(BUILDDIR)/$(TARGET): $(addprefix $(BUILDDIR)/,$(SRCS:.c=.o))
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
-$(TARGET): $(BUILDDIR)/$(TARGET) $(addprefix $(BUILDDIR)/,$(SRCS:.c=.o))
-	cp $< $@
+$(TARGET): $(BUILDDIR)/$(TARGET)
+	ln -sf $< $@
 
 $(BUILDDIR):
 	mkdir -p $@
