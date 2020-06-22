@@ -35,7 +35,9 @@
 #include "logging.h"
 #include "macroutils.h"
 #include <arpa/inet.h>          /* For inet_addr conversion */
+#include <sys/un.h>
 #include <limits.h>
+#include <stddef.h>
 #include <string.h>
 // Uncomment this if statically linking against pcre
 //#define PCRE2_STATIC
@@ -57,6 +59,9 @@ static const char * const uri_re = (
 );
 static const char *uri_groupnames[] = {"proto", "host", "port", "path", NULL};
 
+// On Linux paths for UNIX sockets could be up to 108 symbols (including '\0')
+// Here we portably calculate that
+static const long UNIX_SOCKET_PATH_MAXLEN = sizeof(((struct sockaddr_un *)0)->sun_path) - 1;
 
 // There is always a tradeoff between simplicity and feature-richness
 // PCRE is powerful, but not simple. This could be solved by
@@ -186,6 +191,8 @@ code_free:
 
 bool uri_parse(const char *uristring, struct socket_uri *resuri)
 {
+    log_dbg("UNIX socket path maxlen: %ld", UNIX_SOCKET_PATH_MAXLEN);
+
     bool ret = false;
     if (NULL == resuri || NULL == uristring)
         return ret;   // fail fast
@@ -219,10 +226,11 @@ bool uri_parse(const char *uristring, struct socket_uri *resuri)
             log_err("host conversion failed");
             goto dealloc;
         }
+        // man says ports need to be in network order
         res.port = htons(p);    // machine order to network order
     } else {
         res.path = strdup(path);
-        if (NULL == res.path) {
+        if (NULL == res.path || strlen(res.path) > UNIX_SOCKET_PATH_MAXLEN) {
             log_err("path conversion failed");
             goto dealloc;
         }

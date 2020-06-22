@@ -20,7 +20,7 @@ struct socket_uri {
         struct _tcpudp_addr {       // designates host:port or ip:port pair
             in_port_t port;
             struct in_addr ip;
-            const char *host;
+            char *host;
         };
         const char *path;
     };
