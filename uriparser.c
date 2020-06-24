@@ -35,7 +35,9 @@
 #include "logging.h"
 #include "macroutils.h"
 #include <arpa/inet.h>          /* For inet_addr conversion */
+#include <sys/un.h>
 #include <limits.h>
+#include <stddef.h>
 #include <string.h>
 // Uncomment this if statically linking against pcre
 //#define PCRE2_STATIC
@@ -44,22 +46,22 @@
 #include <pcre2.h>      // Requires buildflags as `pkg-config --cflags --libs libpcre2-8` shows
 
 static const char * const uri_re = (
-    "^ (?P<proto> tcp|udp|unix) : \\/\\/ (?: "
-    "  (?: "
-    "    (?P<ip> "
-    "        \\d{1,3}  (?: \\.\\d{1,3}) {3} "
-    "    ) | (?P<host> "
-    "      (?: [a-zA-Z0-9] | [a-zA-Z0-9][a-zA-Z0-9\\-]{0,61} [a-zA-Z0-9] ) "
-    "      (?: \\. (?: [a-zA-Z0-9] | [a-zA-Z0-9][a-zA-Z0-9\\-]{0,61} [a-zA-Z0-9] ) ) *"
-    "    ) "
-    "    : (?P<port> \\d{1,6}) "
-    "  ) | (?P<path> "
-    "     [^[:cntrl:]] + "
-    "  ) "
-    ")$"
+    " ^ (?: "
+    "     (?P<proto> tcp|udp) : \\/\\/ (?: "
+    "       (?P<host> "
+    "         (?: [a-zA-Z0-9] | [a-zA-Z0-9][a-zA-Z0-9\\-]{0,61} [a-zA-Z0-9] ) "
+    "         (?: \\. (?: [a-zA-Z0-9] | [a-zA-Z0-9][a-zA-Z0-9\\-]{0,61} [a-zA-Z0-9] ) ) * "
+    "       ) : (?P<port> \\d{1,6}) "
+    "   ) | (?: "
+    "     (?P<proto> unix) : \\/\\/ (?P<path> [^[:cntrl:]] + ) "
+    "   ) "
+    " )$ "
 );
-static const char *uri_groupnames[] = {"proto", "ip", "host", "port", "path", NULL};
+static const char *uri_groupnames[] = {"proto", "host", "port", "path", NULL};
 
+// On Linux paths for UNIX sockets could be up to 108 symbols (including '\0')
+// Here we portably calculate that
+static const long UNIX_SOCKET_PATH_MAXLEN = sizeof(((struct sockaddr_un *)0)->sun_path) - 1;
 
 // There is always a tradeoff between simplicity and feature-richness
 // PCRE is powerful, but not simple. This could be solved by
@@ -82,11 +84,11 @@ static long re_collect_named(const char *regexp, const char *string,
     // Use default compile context with following option flags:
     //    PCRE2_EXTENDED - Ignore white space and # comments
     //    PCRE2_UTF - Treat pattern and subjects as UTF strings
-    //    PCRE2_UNGREEDY - Non-greedy matching
+    //    PCRE2_DUPNAMES - Allow duplicate names for subpatterns
     pcre2_code *re = pcre2_compile(
         (PCRE2_SPTR)regexp,                /* A string containing expression to be compiled */
         PCRE2_ZERO_TERMINATED,             /* The length of the string or PCRE2_ZERO_TERMINATED */
-        PCRE2_EXTENDED | PCRE2_UTF,        /* Option bits */
+        PCRE2_EXTENDED | PCRE2_UTF | PCRE2_DUPNAMES,        /* Option bits */
         &re_err,                           /* Where to put an error code */
         &_re_erroffset,                    /* Where to put an error offset */
         NULL);                             /* Pointer to a compile context or NULL */
@@ -124,14 +126,14 @@ static long re_collect_named(const char *regexp, const char *string,
         ret = RE_NOMATCH;
         goto match_free;
     }
-    log_info("Match count %ld", mcnt);
+    log_dbg("Match count %ld", mcnt);
 
-    if (DEBUG >= LOG_INFO) {
+    if (DEBUG >= LOG_DEBUG) {
         PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match);
         for (long i = 0; i <  mcnt; i ++) {
             PCRE2_SPTR substring_start = string + ovector[2*i];
             PCRE2_SIZE substring_length = ovector[2*i+1] - ovector[2*i];
-            log_info("  Item %2ld: %.*s", i, (int)substring_length, (char *)substring_start);
+            log_dbg("  Item %2ld: %.*s", i, (int)substring_length, (char *)substring_start);
         }
     }
 
@@ -158,7 +160,7 @@ static long re_collect_named(const char *regexp, const char *string,
             collected[i] = NULL;
             continue;
         }
-        log_info("  Found %s=%s", groupnames[i], val);
+        log_dbg("  Found %s=%s", groupnames[i], val);
 
         numfound++;
         // duplicate string allocating new memory as PCRE does allocation on its own
@@ -178,10 +180,10 @@ static long re_collect_named(const char *regexp, const char *string,
     ret = numfound;
 
 match_free:
-    log_info("Deallocating re match data");
+    log_dbg("Deallocating re match data");
     pcre2_match_data_free(match);
 code_free:
-    log_info("Deallocating re compiled code");
+    log_dbg("Deallocating re compiled code");
     pcre2_code_free(re);
     return ret;
 }
@@ -189,21 +191,23 @@ code_free:
 
 bool uri_parse(const char *uristring, struct socket_uri *resuri)
 {
+    log_dbg("UNIX socket path maxlen: %ld", UNIX_SOCKET_PATH_MAXLEN);
+
+    bool ret = false;
     if (NULL == resuri || NULL == uristring)
-        return false;   // fail fast
+        return ret;   // fail fast
 
     char *groupvals[arr_len(uri_groupnames) - 1];
     long found = re_collect_named(uri_re, uristring, uri_groupnames, groupvals);
     if (found < 1)
-        return false;
+        return ret;
 
     const char *proto = groupvals[0],
-               *ip    = groupvals[1],
-               *host  = groupvals[2],
-               *port  = groupvals[3],
-               *path  = groupvals[4];
+               *host  = groupvals[1],
+               *port  = groupvals[2],
+               *path  = groupvals[3];
 
-    log_info("HOST: %s IP: %s", host, ip);
+    log_dbg("PROTO: %s HOST: %s PORT: %s PATH: %s", proto, host, port, path);
     struct socket_uri res = {
         .type = (!strcmp(proto, "tcp") ? STYPE_TCP :
                  !strcmp(proto, "udp") ? STYPE_UDP :
@@ -215,41 +219,32 @@ bool uri_parse(const char *uristring, struct socket_uri *resuri)
         long long p;
         if (NULL == port || sscanf(port, "%lld", &p) < 1 || p < 1 || p > 65535) {
             log_err("port conversion failed");
-            return false;
+            goto dealloc;
         }
-        res.port = htons(p);    // machine order to network order
-    }
-    // this could be done in a better way
-    if (NULL != path) {
-        res.path = strdup(path);
-        if (NULL == res.path) {
-            log_err("path memory allocation failed");
-            return false;
-        }
-    } else if ((NULL != host) && (NULL == ip)) {
         res.host = strdup(host);
-        if ((NULL == res.host)) {
+        if (NULL == res.host) {
             log_err("host conversion failed");
-            return false;
+            goto dealloc;
         }
-    } else if ((NULL != ip) && (NULL == host)) {
-        if (!inet_aton(ip, &res.ip)) {
-            log_err("ip/port conversion failed");
-            return false;
-        }
-        res.host = NULL;
+        // man says ports need to be in network order
+        res.port = htons(p);    // machine order to network order
     } else {
-        log_crit("Unexpected uri combination");
-        return false;
+        res.path = strdup(path);
+        if (NULL == res.path || strlen(res.path) > UNIX_SOCKET_PATH_MAXLEN) {
+            log_err("path conversion failed");
+            goto dealloc;
+        }
     }
 
+    ret = true;
+    memcpy(resuri, &res, sizeof(res));
+
+dealloc:
     log_info("Freeing intermediate groupvals");
     arr_foreach(v, groupvals) {
-        log_info("  %s", v);
+        log_dbg("  %s", v);
         free(v);
     }
 
-    memcpy(resuri, &res, sizeof(res));
-
-    return true;
+    return ret;
 }
