@@ -128,7 +128,8 @@ static long re_collect_named(const char *regexp, const char *string,
     }
     log_dbg("Match count %ld", mcnt);
 
-    if (DEBUG >= LOG_DEBUG) {
+#if defined(DEBUG) && (DEBUG >= LOG_DEBUG)
+    {
         PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match);
         for (long i = 0; i <  mcnt; i ++) {
             PCRE2_SPTR substring_start = string + ovector[2*i];
@@ -136,6 +137,7 @@ static long re_collect_named(const char *regexp, const char *string,
             log_dbg("  Item %2ld: %.*s", i, (int)substring_length, (char *)substring_start);
         }
     }
+#endif
 
     // Now extract values of named groups
     log_info("Trying to extract %ld fields", (long)ngroups);

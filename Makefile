@@ -1,6 +1,6 @@
 DEBUG ?= 0
 TARGET := socketecho
-SRCDIR = .
+SRCDIR = ./src
 SRCS = $(TARGET).c
 SRCS += uriparser.c
 LIBS = libpcre2-8
@@ -9,7 +9,7 @@ INCDIRS = $(SRCDIR)
 
 CFLAGS = -O2 -std=gnu17 -fms-extensions -Wall -Wextra -Wpedantic
 CFLAGS += $(shell pkg-config --cflags $(LIBS))
-CFLAGS += -DDEBUG=$(DEBUG)
+CFLAGS += -Iinc -DDEBUG=$(DEBUG)
 # This will turn all warnings into errors
 #CFLAGS += -Werror
 LDFLAGS = $(shell pkg-config --libs $(LIBS)) -Wl,--as-needed
