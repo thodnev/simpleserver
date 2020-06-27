@@ -35,18 +35,21 @@
  *   or reclaim the port used.
  *   Proper cleanups on exit will need having SIGINT signal handler provided.
  */
+#define _GNU_SOURCE
 #include "uriparser.h"
 #include "logging.h"
 #include "macroutils.h"
 #include <netdb.h>              /* getaddrinfo() */
 #include <arpa/inet.h>          /* inet_addr */
 #include <netinet/ip.h>
-#include <sys/un.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
 #include <argp.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 
 // Here we rely on some heavy typecasting. That's ok and is exactly how
