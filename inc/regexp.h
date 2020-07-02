@@ -1,14 +1,22 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-// it will be opaque object
-typedef struct reobj {
-    void *re;               /* Compiled regexp                     */
-    const char *restr;      /* Re format (specfication) string     */
-    bool isjit;             /* Flag indicating whether JIT is used */
-} reobj;
+/**
+ *  Object having all internals required for RegExp operations
+ */
+struct _reobj {
+    /** Compiled regexp */
+    void *re;
+    /** Re format (specfication) string */
+    const char *restr;      
+    /** Flag indicating whether JIT is used */
+    bool isjit;
+};
 
+/** Opaque object implemented with :c:type:`_reobj` */
+typedef struct _reobj reobj;
 
+/** Errors raised */
 enum re_err {
     RE_OK = 0,
     RE_WRONG_ARGS = -1,
@@ -18,7 +26,7 @@ enum re_err {
 };
 
 
-// regexp flags abstraction
+/** regexp flags abstraction */
 enum re_flags {
     // Currently compilaton flags map 1:1 to PCRE2
     RE_ALLOW_EMPTY_CLASS   = 0x00000001UL,
@@ -50,8 +58,20 @@ enum re_flags {
 };
 
 
+/**
+ * Free previously allocated resourses for :c:type:`reobj` object
+ * @obj: pointer to reobj
+ */
 void re_free(reobj *obj);
 
+/**
+ * Allocate new regular expression object
+ * @restr: string contatining regular expression pattern
+ * @flags: a series of flags as provided by :c:enum:`re_flags`
+ * @error: pointer to :c:enum:`re_error` where errror (if any is placed)
+ * @return: newly allocated :c:type:`reobj`
+ *
+ */
 reobj *re_init(const char *restr, unsigned long flags, enum re_err *error);
 
 long re_collect_named(const reobj *obj, const char *string, char **collected,

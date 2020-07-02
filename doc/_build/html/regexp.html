@@ -1,0 +1,173 @@
+
+
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RegExp — Higher-level abstraction over PCRE2 with JIT support &#8212; simpleserver  documentation</title>
+    <link rel="stylesheet" href="_static/bizstyle.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/bizstyle.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="SimpleServer Documentation" href="index.html" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="index.html" title="SimpleServer Documentation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">simpleserver  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RegExp — Higher-level abstraction over PCRE2 with JIT support</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="regexp-higher-level-abstraction-over-pcre2-with-jit-support">
+<h1>RegExp — Higher-level abstraction over PCRE2 with JIT support<a class="headerlink" href="#regexp-higher-level-abstraction-over-pcre2-with-jit-support" title="Permalink to this headline">¶</a></h1>
+<p>More info to appear here…</p>
+<dl class="c type">
+<dt>
+<code class="sig-name descname">struct _reobj</code></dt>
+<dd><p>Object having all internals required for RegExp operations</p>
+<dl class="c member">
+<dt id="c.PhonyNameDueToError.re">
+void *<code class="sig-name descname">re</code><a class="headerlink" href="#c.PhonyNameDueToError.re" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Compiled regexp</p>
+</dd></dl>
+
+<dl class="c member">
+<dt id="c.PhonyNameDueToError.restr">
+<em class="property">const</em> char *<code class="sig-name descname">restr</code><a class="headerlink" href="#c.PhonyNameDueToError.restr" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Re format (specfication) string</p>
+</dd></dl>
+
+<dl class="c member">
+<dt id="c.PhonyNameDueToError.isjit">
+_Bool <code class="sig-name descname">isjit</code><a class="headerlink" href="#c.PhonyNameDueToError.isjit" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Flag indicating whether JIT is used</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="c type">
+<dt id="c.reobj">
+<em class="property">type </em><code class="sig-name descname">reobj</code><a class="headerlink" href="#c.reobj" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Opaque object implemented with <code class="xref c c-type docutils literal notranslate"><span class="pre">_reobj</span></code></p>
+</dd></dl>
+
+<dl class="c type">
+<dt>
+<code class="sig-name descname">enum re_err</code></dt>
+<dd><p>Errors raised</p>
+</dd></dl>
+
+<dl class="c type">
+<dt>
+<code class="sig-name descname">enum re_flags</code></dt>
+<dd><p>regexp flags abstraction</p>
+</dd></dl>
+
+<dl class="c function">
+<dt id="c.re_free">
+void <code class="sig-name descname">re_free</code><span class="sig-paren">(</span><a class="reference internal" href="#c.reobj" title="reobj">reobj</a> *<em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#c.re_free" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Free previously allocated resourses for <a class="reference internal" href="#c.reobj" title="reobj"><code class="xref c c-type docutils literal notranslate"><span class="pre">reobj</span></code></a> object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> – pointer to reobj</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="c function">
+<dt id="c.re_init">
+<a class="reference internal" href="#c.reobj" title="reobj">reobj</a> *<code class="sig-name descname">re_init</code><span class="sig-paren">(</span><em class="property">const</em> char *<em>restr</em>, unsigned long <em>flags</em>, <em class="property">enum</em> re_err *<em>error</em><span class="sig-paren">)</span><a class="headerlink" href="#c.re_init" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Allocate new regular expression object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>restr</strong> – string contatining regular expression pattern</p></li>
+<li><p><strong>flags</strong> – a series of flags as provided by <code class="xref c c-enum docutils literal notranslate"><span class="pre">re_flags</span></code></p></li>
+<li><p><strong>error</strong> – pointer to <code class="xref c c-enum docutils literal notranslate"><span class="pre">re_error</span></code> where errror (if any is placed)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>newly allocated <a class="reference internal" href="#c.reobj" title="reobj"><code class="xref c c-type docutils literal notranslate"><span class="pre">reobj</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">SimpleServer Documentation</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/regexp.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="index.html" title="SimpleServer Documentation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">simpleserver  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">RegExp — Higher-level abstraction over PCRE2 with JIT support</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, thodnev.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.1.
+    </div>
+  </body>
+</html>
