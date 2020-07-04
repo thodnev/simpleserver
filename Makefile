@@ -34,7 +34,7 @@ $(BUILDDIR):
 	mkdir -p $@
 
 clean:
-	-rm -rf $(BUILDDIR)
+	-rm -rf $(BUILDDIR)/*.o
 
 tidy: clean
 	-rm -f $(TARGET)
